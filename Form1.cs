@@ -5,6 +5,7 @@ using System.IO.Ports;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MyModbusTool
@@ -355,12 +356,29 @@ namespace MyModbusTool
             if(buttonStart.Text == "开启")
             {
                 StartSlave();
+                StartSlaveRefreshTask();
             }
             else
             {
                 StopSlave();
             }
         }
+
+        /// <summary>
+        /// 启动从站数据刷新任务
+        /// </summary>
+        private void StartSlaveRefreshTask()
+        {
+            Task.Run(() =>
+            {
+                while(true)
+                {
+                    RefreshSlaveData();
+                    Thread.Sleep(1000);
+                }
+            });
+        }
+
         private void StartSlave()
         {
 
@@ -507,6 +525,30 @@ namespace MyModbusTool
 
         private void comboBoxTable_SelectedIndexChanged(object sender, EventArgs e)
         {
+            RefreshSlaveData();
+
+        }
+
+        /// <summary>
+        /// 刷新从站的数据
+        /// </summary>
+        private void RefreshSlaveData()
+        {
+            if(this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    DoRefreshSalveData();
+                }));
+            } else
+            {
+                DoRefreshSalveData();
+            }
+           
+        }
+
+        private void DoRefreshSalveData()
+        {
             if(slave == null) return;
 
             //获取当前表的类型
@@ -581,13 +623,12 @@ namespace MyModbusTool
 
                     break;
             }
-
         }
 
         private void buttonRefresh_Click(object sender, EventArgs e)
         {
             //直接调用
-            comboBoxTable_SelectedIndexChanged(null, null);
+            RefreshSlaveData();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
